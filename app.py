@@ -1,40 +1,42 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
 app.secret_key = "super_secret_teacher_key"
 
 # --- DATABASE SETUP ---
-def get_db_connection():
-    conn = sqlite3.connect('database.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
+# Handle PostgreSQL URL prefix change
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+class Question(db.Model):
+    __tablename__ = 'questions'
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(100), nullable=False)
+    question = db.Column(db.String(500), nullable=False)
+    opt1 = db.Column(db.String(200), nullable=False)
+    opt2 = db.Column(db.String(200), nullable=False)
+    opt3 = db.Column(db.String(200), nullable=False)
+    opt4 = db.Column(db.String(200), nullable=False)
+    answer = db.Column(db.String(200), nullable=False)
+
+class Score(db.Model):
+    __tablename__ = 'scores'
+    id = db.Column(db.Integer, primary_key=True)
+    student_name = db.Column(db.String(100), nullable=False)
+    subject = db.Column(db.String(100), nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    total = db.Column(db.Integer, nullable=False)
 
 def init_db():
-    conn = get_db_connection()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS questions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            subject TEXT NOT NULL, 
-            question TEXT NOT NULL,
-            opt1 TEXT NOT NULL,
-            opt2 TEXT NOT NULL,
-            opt3 TEXT NOT NULL,
-            opt4 TEXT NOT NULL,
-            answer TEXT NOT NULL
-        )
-    ''')
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS scores (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_name TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            score INTEGER NOT NULL,
-            total INTEGER NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    with app.app_context():
+        db.create_all()
 
 init_db()
 
@@ -42,27 +44,25 @@ init_db()
 
 @app.route("/")
 def home():
-    conn = get_db_connection()
-    subjects = conn.execute('SELECT DISTINCT subject FROM questions').fetchall()
-    conn.close()
-    return render_template("index.html", subjects=subjects)
+    subjects = db.session.execute(db.select(db.func.distinct(Question.subject))).scalars().all()
+    return render_template("index.html", subjects=[{"subject": s} for s in subjects])
 
 @app.route("/quiz", methods=["POST"])
 def quiz():
     student_name = request.form.get("student_name")
     subject = request.form.get("subject")
 
-    conn = get_db_connection()
-    db_questions = conn.execute('SELECT * FROM questions WHERE subject = ? ORDER BY RANDOM() LIMIT 10', (subject,)).fetchall()
-    conn.close()
+    db_questions = db.session.execute(
+        db.select(Question).filter_by(subject=subject).order_by(db.func.random()).limit(10)
+    ).scalars().all()
 
     questions = []
     for q in db_questions:
         questions.append({
-            "id": f"q{q['id']}",
-            "question": q["question"],
-            "options": [q["opt1"], q["opt2"], q["opt3"], q["opt4"]],
-            "answer": q["answer"]
+            "id": f"q{q.id}",
+            "question": q.question,
+            "options": [q.opt1, q.opt2, q.opt3, q.opt4],
+            "answer": q.answer
         })
 
     return render_template("quiz.html", questions=questions, student_name=student_name, subject=subject)
@@ -74,9 +74,8 @@ def submit():
     score = 0
     detailed_results = []
     
-    conn = get_db_connection()
-    all_db_questions = conn.execute('SELECT * FROM questions').fetchall()
-    question_dict = { f"q{q['id']}": q for q in all_db_questions }
+    all_db_questions = db.session.execute(db.select(Question)).scalars().all()
+    question_dict = {f"q{q.id}": q for q in all_db_questions}
     
     questions_asked = 0
     
@@ -84,19 +83,19 @@ def submit():
         if key.startswith('q') and key in question_dict:
             questions_asked += 1
             actual_q = question_dict[key]
-            is_correct = (user_answer == actual_q['answer'])
-            if is_correct: score += 1
+            is_correct = (user_answer == actual_q.answer)
+            if is_correct: 
+                score += 1
             detailed_results.append({
-                "question": actual_q['question'],
+                "question": actual_q.question,
                 "user_answer": user_answer,
-                "correct_answer": actual_q['answer'],
+                "correct_answer": actual_q.answer,
                 "is_correct": is_correct
             })
             
-    conn.execute('INSERT INTO scores (student_name, subject, score, total) VALUES (?, ?, ?, ?)', 
-                 (student_name, subject, score, questions_asked))
-    conn.commit()
-    conn.close()
+    new_score = Score(student_name=student_name, subject=subject, score=score, total=questions_asked)
+    db.session.add(new_score)
+    db.session.commit()
     
     return render_template("results.html", student_name=student_name, score=score, total=questions_asked, results=detailed_results)
 
@@ -115,16 +114,15 @@ def login():
 
 @app.route("/leaderboard")
 def leaderboard():
-    if not session.get("logged_in"): return redirect(url_for("login"))
-    conn = get_db_connection()
-    scores = conn.execute('SELECT * FROM scores ORDER BY score DESC').fetchall()
-    conn.close()
+    if not session.get("logged_in"): 
+        return redirect(url_for("login"))
+    scores = db.session.execute(db.select(Score).order_by(Score.score.desc())).scalars().all()
     return render_template("leaderboard.html", scores=scores)
 
 @app.route("/add", methods=["GET", "POST"])
 def add_question():
-    if not session.get("logged_in"): return redirect(url_for("login"))
-    conn = get_db_connection()
+    if not session.get("logged_in"): 
+        return redirect(url_for("login"))
 
     if request.method == "POST":
         subject = request.form.get("subject")
@@ -135,19 +133,20 @@ def add_question():
         opt4 = request.form.get("opt4")
         answer = request.form.get("answer")
 
-        conn.execute('INSERT INTO questions (subject, question, opt1, opt2, opt3, opt4, answer) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-                     (subject, question, opt1, opt2, opt3, opt4, answer))
-        conn.commit()
+        new_question = Question(subject=subject, question=question, opt1=opt1, opt2=opt2, opt3=opt3, opt4=opt4, answer=answer)
+        db.session.add(new_question)
+        db.session.commit()
         return redirect(url_for("add_question"))
         
-    all_questions = conn.execute('SELECT * FROM questions ORDER BY subject').fetchall()
-    conn.close()
+    all_questions = db.session.execute(db.select(Question).order_by(Question.subject)).scalars().all()
     return render_template("add.html", questions=all_questions)
 
 @app.route("/edit/<int:q_id>", methods=["GET", "POST"])
 def edit_question(q_id):
-    if not session.get("logged_in"): return redirect(url_for("login"))
-    conn = get_db_connection()
+    if not session.get("logged_in"): 
+        return redirect(url_for("login"))
+    
+    question_to_edit = db.session.execute(db.select(Question).filter_by(id=q_id)).scalar_one_or_none()
     
     if request.method == "POST":
         subject = request.form.get("subject")
@@ -158,26 +157,26 @@ def edit_question(q_id):
         opt4 = request.form.get("opt4")
         answer = request.form.get("answer")
         
-        conn.execute('''
-            UPDATE questions 
-            SET subject=?, question=?, opt1=?, opt2=?, opt3=?, opt4=?, answer=?
-            WHERE id=?
-        ''', (subject, question, opt1, opt2, opt3, opt4, answer, q_id))
-        conn.commit()
-        conn.close()
+        question_to_edit.subject = subject
+        question_to_edit.question = question
+        question_to_edit.opt1 = opt1
+        question_to_edit.opt2 = opt2
+        question_to_edit.opt3 = opt3
+        question_to_edit.opt4 = opt4
+        question_to_edit.answer = answer
+        db.session.commit()
         return redirect(url_for("add_question"))
         
-    question_to_edit = conn.execute('SELECT * FROM questions WHERE id = ?', (q_id,)).fetchone()
-    conn.close()
     return render_template("edit.html", q=question_to_edit)
 
 @app.route("/delete/<int:q_id>")
 def delete_question(q_id):
-    if not session.get("logged_in"): return redirect(url_for("login"))
-    conn = get_db_connection()
-    conn.execute('DELETE FROM questions WHERE id = ?', (q_id,))
-    conn.commit()
-    conn.close()
+    if not session.get("logged_in"): 
+        return redirect(url_for("login"))
+    question_to_delete = db.session.execute(db.select(Question).filter_by(id=q_id)).scalar_one_or_none()
+    if question_to_delete:
+        db.session.delete(question_to_delete)
+        db.session.commit()
     return redirect(url_for("add_question"))
 
 @app.route("/logout")
