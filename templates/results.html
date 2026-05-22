@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Results</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f5; padding: 30px; max-width: 800px; margin: auto; color: #333; }
+        .header { text-align: center; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        
+        /* The basic style for a question card */
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 6px solid #ccc; }
+        .card-question { font-size: 18px; margin-top: 0; }
+        
+        /* Dynamic colors based on right or wrong */
+        .correct { border-left-color: #2ecc71; } /* Green */
+        .incorrect { border-left-color: #e74c3c; } /* Red */
+        
+        .correct-text { color: #2ecc71; font-weight: bold; }
+        .incorrect-text { color: #e74c3c; font-weight: bold; }
+        
+        .btn { display: block; width: 200px; margin: 30px auto; background-color: #3498db; color: white; text-align: center; padding: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .btn:hover { background-color: #2980b9; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Test Complete, {{ student_name }}! 🎉</h2>
+        <h1>You scored {{ score }} out of {{ total }}</h1>
+    </div>
+
+    <h2>Detailed Review:</h2>
+    
+    {% for r in results %}
+        <div class="card {% if r.is_correct %}correct{% else %}incorrect{% endif %}">
+            <p class="card-question"><strong>{{ loop.index }}. {{ r.question }}</strong></p>
+            
+            <p>Your Answer: 
+                <span class="{% if r.is_correct %}correct-text{% else %}incorrect-text{% endif %}">
+                    {{ r.user_answer }}
+                </span>
+            </p>
+            
+            {% if not r.is_correct %}
+                <p>Correct Answer: <span class="correct-text">{{ r.correct_answer }}</span></p>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    <a href="/" class="btn">Take Another Test</a>
+
+</body>
+</html>

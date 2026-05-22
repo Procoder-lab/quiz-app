@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exam Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #eef2f5; color: #333; max-width: 600px; margin: 50px auto; padding: 30px; }
+        .card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; border-top: 5px solid #3498db; }
+        input, select { width: 90%; padding: 15px; margin: 15px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        .submit-btn { background-color: #3498db; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; transition: 0.3s; }
+        .submit-btn:hover { background-color: #2980b9; }
+        .admin-link { display: block; margin-top: 20px; color: #7f8c8d; text-decoration: none; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🎓 Student Exam Portal</h1>
+        <p>Please enter your name and select your exam.</p>
+        {% if subjects %}
+        <form action="/quiz" method="POST">
+            <input type="text" name="student_name" placeholder="Enter your full name..." required />
+            <select name="subject" required>
+                <option value="" disabled selected>-- Select an Exam --</option>
+                {% for s in subjects %}
+                    <option value="{{ s.subject }}">{{ s.subject }} Exam</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="submit-btn">Start Test Now</button>
+        </form>
+        {% else %}
+            <p style="color: red; font-weight: bold;">No exams available. Teacher must add questions first!</p>
+        {% endif %}
+    </div>
+    <a href="/login" class="admin-link">Teacher Login (Add Questions)</a>
+</body>
+</html>

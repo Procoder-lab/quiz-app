@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Questions</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 8px; max-width: 700px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        input { width: 95%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        .question-card { background: #fafafa; padding: 15px; border: 1px solid #ddd; margin-top: 15px; border-radius: 5px; border-left: 5px solid #9b59b6; }
+        .btn-edit { background: #3498db; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; font-size: 14px; margin-right: 5px; }
+        .btn-delete { background: #e74c3c; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="/leaderboard" style="color: #666; text-decoration: none;">&larr; Back to Leaderboard</a>
+    <h2>➕ Add a New Question</h2>
+    <form method="POST">
+        <label>Subject (e.g., Math):</label> <input type="text" name="subject" required />
+        <label>The Question:</label> <input type="text" name="question" required />
+        <label>Option 1:</label> <input type="text" name="opt1" required />
+        <label>Option 2:</label> <input type="text" name="opt2" required />
+        <label>Option 3:</label> <input type="text" name="opt3" required />
+        <label>Option 4:</label> <input type="text" name="opt4" required />
+        <label><b>Correct Answer:</b></label> <input type="text" name="answer" required />
+        <button type="submit">Add Question</button>
+    </form>
+
+    <hr style="margin: 40px 0;">
+
+    <h2>🛠 Manage Existing Questions</h2>
+    {% for q in questions %}
+        <div class="question-card">
+            <p><small style="color: #9b59b6; font-weight: bold;">[{{ q['subject'] }}]</small></p>
+            <p><strong>{{ q['question'] }}</strong></p>
+            <p style="color: #2ecc71; margin-bottom: 15px;">Answer: {{ q['answer'] }}</p>
+            
+            <a href="/edit/{{ q.id }}" class="btn-edit">✏️ Edit</a>
+            <a href="/delete/{{ q.id }}" class="btn-delete" onclick="return confirm('Delete this forever?');">🗑️ Delete</a>
+        </div>
+    {% endfor %}
+</div>
+</body>
+</html>

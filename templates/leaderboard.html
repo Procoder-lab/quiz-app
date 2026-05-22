@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Leaderboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 30px; max-width: 800px; margin: auto; }
+        .dashboard { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #3498db; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        .btn { display: inline-block; background-color: #2ecc71; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+        .btn-logout { background-color: #e74c3c; float: right; }
+        .btn-secondary { background-color: #95a5a6; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <a href="/logout" class="btn btn-logout">Logout</a>
+    <h2>🏆 Student Leaderboard</h2>
+    
+    <table>
+        <tr>
+            <th>Rank</th>
+            <th>Student Name</th>
+            <th>Score</th>
+            <th>Total Questions</th>
+        </tr>
+        {% for s in scores %}
+        <tr>
+            <td>#{{ loop.index }}</td>
+            <td><strong>{{ s.student_name }}</strong></td>
+            <td>{{ s.score }}</td>
+            <td>{{ s.total }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">No students have taken the test yet.</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/add" class="btn">+ Add New Question to Test</a>
+    <a href="/" class="btn btn-secondary">View Student Test</a>
+</div>
+
+</body>
+</html>

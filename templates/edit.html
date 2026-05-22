@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Question</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-top: 5px solid #3498db; }
+        input { width: 95%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>✏️ Edit Question #{{ q.id }}</h2>
+    <form method="POST">
+        <label>Subject:</label>
+        <input type="text" name="subject" value="{{ q['subject'] }}" required />
+
+        <label>The Question:</label>
+        <input type="text" name="question" value="{{ q['question'] }}" required />
+
+        <label>Option 1:</label> <input type="text" name="opt1" value="{{ q['opt1'] }}" required />
+        <label>Option 2:</label> <input type="text" name="opt2" value="{{ q['opt2'] }}" required />
+        <label>Option 3:</label> <input type="text" name="opt3" value="{{ q['opt3'] }}" required />
+        <label>Option 4:</label> <input type="text" name="opt4" value="{{ q['opt4'] }}" required />
+
+        <label><b>Correct Answer:</b></label>
+        <input type="text" name="answer" value="{{ q['answer'] }}" required />
+
+        <button type="submit">Save Changes</button>
+    </form>
+    <div style="text-align: center; margin-top: 15px;"><a href="/add" style="color: #999;">Cancel</a></div>
+</div>
+</body>
+</html>

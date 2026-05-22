@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ subject }} Exam</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #eef2f5; color: #333; max-width: 800px; margin: 0 auto; padding: 30px; }
+        .timer-container { background-color: #34495e; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; border-radius: 8px; margin-bottom: 20px; position: sticky; top: 20px; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        h2 { text-align: center; color: #2c3e50; }
+        .card { background: white; padding: 20px 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border-left: 5px solid #3498db; }
+        label { display: block; margin: 10px 0; cursor: pointer; font-size: 16px; }
+        input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
+        .submit-btn { background-color: #2ecc71; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="timer-container" id="timer-box">
+        ⏳ Time Remaining: <span id="time-display">10:00</span>
+    </div>
+
+    <h2>📝 {{ subject }} Exam (Good luck, {{ student_name }}!)</h2>
+    
+    <form action="/submit" method="POST" id="test-form">
+        <input type="hidden" name="student_name" value="{{ student_name }}" />
+        <input type="hidden" name="subject" value="{{ subject }}" />
+
+        {% for q in questions %}
+            <div class="card">
+                <h3>{{ loop.index }}. {{ q.question }}</h3>
+                {% for option in q.options %}
+                    <label>
+                        <input type="radio" name="{{ q.id }}" value="{{ option }}" required />
+                        {{ option }}
+                    </label>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No questions found for this subject.</p>
+        {% endfor %}
+        
+        <button type="submit" class="submit-btn">Submit Exam</button>
+    </form>
+
+    <script>
+        let timeInSeconds = 600; 
+        const timeDisplay = document.getElementById("time-display");
+        const timerBox = document.getElementById("timer-box");
+        const testForm = document.getElementById("test-form");
+
+        const countdown = setInterval(function() {
+            timeInSeconds--; 
+            let minutes = Math.floor(timeInSeconds / 60);
+            let seconds = timeInSeconds % 60;
+            if (seconds < 10) seconds = "0" + seconds;
+            timeDisplay.textContent = minutes + ":" + seconds;
+
+            if (timeInSeconds <= 60) timerBox.style.backgroundColor = "#e74c3c"; 
+            if (timeInSeconds <= 0) {
+                clearInterval(countdown);
+                alert("⏳ Time is up! Submitting your test automatically.");
+                testForm.submit(); 
+            }
+        }, 1000); 
+    </script>
+</body>
+</html>
